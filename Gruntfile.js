@@ -11,7 +11,7 @@ module.exports = function ( grunt ) {
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-coffee');
-  grunt.loadNpmTasks('grunt-contrib-less');
+  grunt.loadNpmTasks('grunt-contrib-sass');
   grunt.loadNpmTasks('grunt-conventional-changelog');
   grunt.loadNpmTasks('grunt-bump');
   grunt.loadNpmTasks('grunt-coffeelint');
@@ -139,6 +139,16 @@ module.exports = function ( grunt ) {
           }
         ]
       },
+      build_scss: {
+        files: [
+          {
+            src: [ '<%= app_files.scss %>' , '<%= vendor_files.scss %>'],
+            dest: '<%= build_dir %>/',
+            cwd: '.',
+            expand: true
+          }
+        ]
+      },
       compile_assets: {
         files: [
           {
@@ -237,27 +247,27 @@ module.exports = function ( grunt ) {
       }
     },
 
-    /**
-     * `grunt-contrib-less` handles our LESS compilation and uglification automatically.
-     * Only our `main.less` file is included in compilation; all other files
-     * must be imported from this file.
-     */
-    less: {
-      build: {
-        files: {
-          '<%= build_dir %>/assets/<%= pkg.name %>-<%= pkg.version %>.css': '<%= app_files.less %>'
+    sassmoduleimport : {
+        build: {
+          src: ['src/app/**/*']
         }
-      },
-      compile: {
-        files: {
-          '<%= build_dir %>/assets/<%= pkg.name %>-<%= pkg.version %>.css': '<%= app_files.less %>'
-        },
-        options: {
-          cleancss: true,
-          compress: true
-        }
-      }
     },
+
+    /**
+    * Sass buildstep
+    */
+    sass: {
+        dist: {
+            files: {
+                '<%= build_dir %>/assets/<%= pkg.name %>-<%= pkg.version %>.css': '<%= build_dir %>/scss/main.scss'
+            }
+        }/*,
+        options: {
+          dest: '<%= build_dir %>/assets/<%= pkg.name %>-<%= pkg.version %>.css'
+        }*/
+    },
+
+
 
     /**
      * `jshint` defines the rules of our linter as well as which files we
@@ -496,9 +506,9 @@ module.exports = function ( grunt ) {
       /**
        * When the CSS files change, we need to compile and minify them.
        */
-      less: {
-        files: [ 'src/**/*.less' ],
-        tasks: [ 'less:build' ]
+       scss: {
+        files: [ 'src/**/*.scss' ],
+        tasks: [ 'sassmoduleimport','sass' ]
       },
 
       /**
@@ -552,9 +562,9 @@ module.exports = function ( grunt ) {
    * The `build` task gets your app ready to run for development and testing.
    */
   grunt.registerTask( 'build', [
-    'clean', 'html2js', 'jshint', 'coffeelint', 'coffee', 'less:build',
+    'clean', 'html2js', 'jshint', 'coffeelint', 'coffee','sassmoduleimport','sass',
     'concat:build_css', 'copy:build_app_assets', 'copy:build_vendor_assets',
-    'copy:build_appjs', 'copy:build_vendorjs', 'index:build', 'karmaconfig',
+    'copy:build_appjs', 'copy:build_scss', 'copy:build_vendorjs', 'index:build', 'karmaconfig',
     'karma:continuous' 
   ]);
 
@@ -563,7 +573,7 @@ module.exports = function ( grunt ) {
    * minifying your code.
    */
   grunt.registerTask( 'compile', [
-    'less:compile', 'copy:compile_assets', 'ngmin', 'concat:compile_js', 'uglify', 'index:compile'
+    'copy:compile_assets', 'ngmin', 'concat:compile_js', 'uglify', 'index:compile'
   ]);
 
   /**
@@ -581,6 +591,15 @@ module.exports = function ( grunt ) {
   function filterForCSS ( files ) {
     return files.filter( function ( file ) {
       return file.match( /\.css$/ );
+    });
+  }
+
+   /**
+   * A utility function to get all app SCSS sources.
+   */
+  function filterForSCSS ( files ) {
+    return files.filter( function ( file ) {
+      return file.match( /\.scss$/ );
     });
   }
 
@@ -625,6 +644,25 @@ module.exports = function ( grunt ) {
         return grunt.template.process( contents, {
           data: {
             scripts: jsFiles
+          }
+        });
+      }
+    });
+  });
+
+    grunt.registerMultiTask( 'sassmoduleimport', 'Process main.scss template', function () {
+    var dirRE = new RegExp( '^('+grunt.config('build_dir')+'|'+grunt.config('compile_dir')+')\/', 'g' );
+ 
+    var scssFiles = filterForSCSS( this.filesSrc ).map( function ( file ) {
+      console.log(file);
+      return file.replace( dirRE, '' );
+    });
+    
+    grunt.file.copy('src/scss/main.scss', grunt.config('build_dir') + '/scss/main.scss', { 
+      process: function ( contents, path ) {
+        return grunt.template.process( contents, {
+          data: {
+            imports: scssFiles
           }
         });
       }
