@@ -258,13 +258,15 @@ module.exports = function ( grunt ) {
     */
     sass: {
         dist: {
+            /** use when debugging
+            options: {
+                sourcemap: true
+            },
+            */
             files: {
                 '<%= build_dir %>/assets/<%= pkg.name %>-<%= pkg.version %>.css': '<%= build_dir %>/scss/main.scss'
             }
-        }/*,
-        options: {
-          dest: '<%= build_dir %>/assets/<%= pkg.name %>-<%= pkg.version %>.css'
-        }*/
+        }
     },
 
 
