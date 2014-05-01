@@ -30,7 +30,7 @@ module.exports = {
     ctpl: [ 'src/common/**/*.tpl.html' ],
 
     html: [ 'src/index.html' ],
-    less: 'src/less/main.less'
+    scss: [ 'src/**/*.scss']
   },
 
   /**
@@ -69,6 +69,10 @@ module.exports = {
       'vendor/angular-ui-utils/modules/route/route.js'
     ],
     css: [
+      
+    ],
+    scss: [
+      'vendor/bootstrap/**/*.scss'
     ],
     assets: [
     ]
